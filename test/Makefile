@@ -1,1 +1,1 @@
-include ../../../build/lib_test.mk
+include ../../main/build/lib_test.mk
