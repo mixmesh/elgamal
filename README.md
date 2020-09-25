@@ -1,16 +1,30 @@
 # ElGamal encryption
 
+A library which performs ElGamal encryption.
+
+## Modules
+
+<dl>
+  <dt>./src/elgamal.erl</dt>
+  <dd>Multiplicate and additive ElGamal encryption
+  <dt>./src/belgamal.erl</dt>
+  <dd>Binary marshalling of results produced by the elgamal module</dd>
+</dl>
+
+## Unit testing
+
+* ./test/unit_test_elgamal.erl
+* ./test/unit_test_belgamal.erl
+
+They can be run separately with the following commands:
+
 ```
-./lib/elgamal/src/elgamal.erl
-./lib/elgamal/src/elgamal.hrl
+$ ../obscrete/bin/unit_test --config ../obscrete/etc/obscrete-no-players.conf elgamal
+$ ../obscrete/bin/unit_test --config ../obscrete/etc/obscrete-no-players.conf elgamal
 ```
 
-The multiplicative and additive ElGamal encryption library. More
-info is availble in elgamal.erl and elgamal.hrl.
+or all in once with the following command:
 
 ```
-./lib/elgamal/test/unit_test_elgamal.erl
+$ ../obscrete/bin/unit_test --config ../obscrete/etc/obscrete-no-players.conf test/
 ```
-
-Test suite which tests the elgamal module. More info is availble in
-unit_test_suite.erl.
