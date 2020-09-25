@@ -23,6 +23,6 @@ A library which performs ElGamal encryption.
 Unit tests can be run separately or all at once:
 ```
 $ ../obscrete/bin/unit_test --config ../obscrete/etc/obscrete-no-players.conf elgamal
-$ ../obscrete/bin/unit_test --config ../obscrete/etc/obscrete-no-players.conf elgamal
+$ ../obscrete/bin/unit_test --config ../obscrete/etc/obscrete-no-players.conf belgamal
 $ ../obscrete/bin/unit_test --config ../obscrete/etc/obscrete-no-players.conf test/
 ```
