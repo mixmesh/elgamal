@@ -6,7 +6,7 @@ A library which performs ElGamal encryption.
 
 <dl>
   <dt>./src/elgamal.erl</dt>
-  <dd>Multiplicative and additive ElGamal encryption
+  <dd>Multiplicative and additive ElGamal encryption</dd>
   <dt>./src/belgamal.erl</dt>
   <dd>Binary marshalling of results produced by the elgamal module</dd>
 </dl>
@@ -15,7 +15,6 @@ A library which performs ElGamal encryption.
   <dt>./test/unit_test_elgamal.erl</dt>
   <dd>Unit test for the elgamal module</dd>
   <dt>./test/unit_test_belgamal.erl</dt>
-  <dt>./src/belgamal.erl</dt>
   <dd>Unit test for the belgamal module</dd>
 </dl>
 
