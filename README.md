@@ -9,9 +9,6 @@ A library which performs ElGamal encryption.
   <dd>Multiplicative and additive ElGamal encryption</dd>
   <dt>./src/belgamal.erl</dt>
   <dd>Binary marshalling of results produced by the elgamal module</dd>
-</dl>
-
-<dl>
   <dt>./test/unit_test_elgamal.erl</dt>
   <dd>Unit test for the elgamal module</dd>
   <dt>./test/unit_test_belgamal.erl</dt>
@@ -23,6 +20,6 @@ A library which performs ElGamal encryption.
 Unit tests can be run separately or all at once:
 ```
 $ ../obscrete/bin/unit_test --config ../obscrete/etc/obscrete-no-players.conf elgamal
-$ ../obscrete/bin/unit_test --config ../obscrete/etc/obscrete-no-players.conf elgamal
+$ ../obscrete/bin/unit_test --config ../obscrete/etc/obscrete-no-players.conf belgamal
 $ ../obscrete/bin/unit_test --config ../obscrete/etc/obscrete-no-players.conf test/
 ```
