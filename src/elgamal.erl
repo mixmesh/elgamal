@@ -21,9 +21,13 @@ generate_encryption_factors(Len) ->
     G = new_generator(Q, P),
     {P, Q, G}.
 
+%%
+%% For each prime factor x of p−1, verify that g^((p−1)/x) != 1 (mod p)
+%% for safe prime then x = 2 and q
+%% 
 new_generator(Q, P) ->
-    G = crypto:rand_uniform(1, P),
-    case mpz:powm(G, Q, P) == 1 andalso mpz:pow_ui(G, 2) /= 1 of
+    G = uniform(1, P),
+    case pow(G, Q, P) =/= 1 andalso pow(G, 2, P) =/= 1 of
         true ->
             G;
         false ->
@@ -33,35 +37,35 @@ new_generator(Q, P) ->
 %% Exported: generate_key_pair
 
 generate_key_pair() ->
-    X = crypto:rand_uniform(1, ?Q),
-    H = mpz:powm(?G, X, ?P),
+    X = uniform(1, ?Q),
+    H = pow(?G, X, ?P),
     {#pk{h = H}, #sk{x = X}}.
 
 %% Exported: encrypt (multiplicative ElGamal encryption)
 
 encrypt(Plaintext, #pk{h = H}) ->
     M = binary:decode_unsigned(Plaintext),
-    R = crypto:rand_uniform(1, ?Q),
+    R = uniform(1, ?Q),
     true = M >= 1 andalso M < ?Q - 1,
-    S = mpz:powm(H, R, ?P),
-    C1 = mpz:powm(?G, R, ?P),
+    S = pow(H, R, ?P),
+    C1 = pow(?G, R, ?P),
     C2 = (M * S) rem ?P,
     {C1, C2}.
 
 %% Exported: decrypt (multiplicative ElGamal decryption)
 
 decrypt({C1, C2}, #sk{x = X}) ->
-    S = mpz:powm(C1, X, ?P),
-    M = (C2 * mpz:invert(S, ?P)) rem ?P,
+    S = pow(C1, ?P-1-X, ?P),  %% = C1^-x
+    M = (C2 * S) rem ?P,
     binary:encode_unsigned(M).
 
 %% Exported: modified_encrypt (additive ElGamal encryption)
 
 modified_encrypt(Plaintext, #pk{h = H}) ->
     M = binary:decode_unsigned(Plaintext),
-    R = crypto:rand_uniform(1, ?Q),
-    C1 = mpz:powm(?G, R, ?P),
-    C2 = mpz:powm(?G, M, ?P) * mpz:powm(H, R, ?P) rem ?P,
+    R = uniform(1, ?Q),
+    C1 = pow(?G, R, ?P),
+    C2 = (pow(?G, M, ?P) * pow(H, R, ?P)) rem ?P,
     {C1, C2}.
 
 %% Exported: modified_decrypt (additive ElGamal decryption)
@@ -84,7 +88,7 @@ modified_decrypt(Ciphertext, Sk) ->
 %% NOTE: Brute force only realistically handles plaintexts less than
 %% or equal to 24 bits (or else it takes for ever)
 brute_force_dlog(Plaintext, N) ->
-  case mpz:powm(?G, N, ?P) of
+  case pow(?G, N, ?P) of
       Plaintext ->
           N;
       _ ->
@@ -130,12 +134,21 @@ udecrypt({UnitCiphertext, Ciphertexts}, Sk) ->
 %% Exported: urandomize
 
 urandomize({{UnitC1, UnitC2}, Ciphertexts}) ->
-    K0 = crypto:rand_uniform(1, ?P),
+    K0 = uniform(1, ?P),
     RandomizedCiphertexts =
         lists:map(fun({C1, C2}) ->
-                          K1 = crypto:rand_uniform(1, ?P),
-                          {C1 * mpz:powm(UnitC1, K1, ?P),
-                           C2 * mpz:powm(UnitC2, K1, ?P)}
+                          K1 = uniform(1, ?P),
+                          {C1 * pow(UnitC1, K1, ?P),
+                           C2 * pow(UnitC2, K1, ?P)}
                   end, Ciphertexts),
-  {{mpz:powm(UnitC1, K0, ?P), mpz:powm(UnitC2, K0, ?P)},
-   RandomizedCiphertexts}.
+    {{pow(UnitC1, K0, ?P), pow(UnitC2, K0, ?P)},
+     RandomizedCiphertexts}.
+
+uniform(Min, Max) ->
+    Min1 = Min - 1,
+    N = Max-Min1,
+    R = rand:uniform(N),
+    R+Min1.
+
+pow(A, B, M) ->
+    binary:decode_unsigned(crypto:mod_pow(A, B, M)).
