@@ -1,7 +1,7 @@
 -module(unit_test_elgamal).
 -export([start/0]).
 
--include("../src/elgamal.hrl").
+-include("../include/elgamal.hrl").
 
 start() ->
     {Pk, Sk} = elgamal:generate_key_pair(),
