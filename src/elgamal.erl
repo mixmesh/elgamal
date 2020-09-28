@@ -6,7 +6,8 @@
 -export([uencrypt/2, udecrypt/2, urandomize/1]).
 %% basic universal 
 -export([uencrypt0/2, udecrypt0/2, ureencrypt0/1]).
--include("elgamal.hrl").
+
+-include("../include/elgamal.hrl").
 
 %% This module implements multiplicative *and* additive ElGamal
 %% encryption as described in "An Anonymous Messaging System for Delay

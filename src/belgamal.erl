@@ -6,7 +6,7 @@
 -export([public_key_to_binary/1, secret_key_to_binary/1]).
 
 -include_lib("apptools/include/shorthand.hrl").
--include("elgamal.hrl").
+-include_lib("elgamal/include/elgamal.hrl").
 
 %% Exported: encrypt
 
