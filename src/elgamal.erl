@@ -4,7 +4,8 @@
 -export([encrypt/2, decrypt/2]).
 -export([modified_encrypt/2, modified_decrypt/2]).
 -export([uencrypt/2, udecrypt/2, urandomize/1]).
-
+%% basic universal 
+-export([uencrypt0/2, udecrypt0/2, ureencrypt0/1]).
 -include("elgamal.hrl").
 
 %% This module implements multiplicative *and* additive ElGamal
@@ -43,7 +44,7 @@ generate_key_pair() ->
 
 %% Exported: encrypt (multiplicative ElGamal encryption)
 
-encrypt(Plaintext, #pk{h = H}) ->
+encrypt(Plaintext, #pk{h = H}) when is_binary(Plaintext) ->
     M = binary:decode_unsigned(Plaintext),
     R = uniform(1, ?Q),
     true = M >= 1 andalso M < ?Q - 1,
@@ -143,6 +144,44 @@ urandomize({{UnitC1, UnitC2}, Ciphertexts}) ->
                   end, Ciphertexts),
     {{pow(UnitC1, K0, ?P), pow(UnitC2, K0, ?P)},
      RandomizedCiphertexts}.
+
+
+%% (basic) universal encrypt
+uencrypt0(PlainText, Pk) ->
+    Bin = erlang:iolist_to_binary(PlainText),
+    M = binary:decode_unsigned(Bin),
+    true = M >= 1 andalso M < ?Q-1,
+    uencrypt0_(M, Pk).
+
+uencrypt0_(M, #pk{h=H}) ->
+    K0 = uniform(1, ?Q-2),
+    K1 = uniform(1, ?Q-2),
+    A0 = (M*pow(H,K0,?P)) rem ?P,
+    B0 = pow(?G,K0,?P),
+    A1 = pow(H,K1,?P),
+    B1 = pow(?G,K1,?P),
+    {{A0,B0},{A1,B1}}.
+
+udecrypt0(Cipher, Sk) ->
+    case udecrypt0_(Cipher, Sk) of
+	false -> false;
+	M -> binary:encode_unsigned(M)
+    end.
+
+udecrypt0_({{A0,B0},{A1,B1}}, #sk{x=X}) ->
+    case A1*pow(B1,?P-1-X,?P) rem ?P of
+	1 -> A0*pow(B0,?P-1-X,?P) rem ?P;
+	_ -> false
+    end.
+
+ureencrypt0({{A0,B0},{A1,B1}}) ->
+    K0 = uniform(1, ?Q-2),
+    K1 = uniform(1, ?Q-2),
+    A0_1 = (A0*pow(A1,K0,?P)) rem ?P,
+    B0_1 = (B0*pow(B1,K0,?P)) rem ?P,
+    A1_1 = pow(A1,K1,?P),
+    B1_1 = pow(B1,K1,?P),
+    {{A0_1,B0_1},{A1_1,B1_1}}.
 
 uniform(Min, Max) ->
     Min1 = Min - 1,
