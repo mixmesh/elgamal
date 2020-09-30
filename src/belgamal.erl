@@ -1,4 +1,5 @@
 -module(belgamal).
+-export([generate_key_pair/0]).
 -export([encrypt/2, decrypt/2]).
 -export([uencrypt/2, udecrypt/2]).
 -export([urandomize/1]).
@@ -7,6 +8,13 @@
 
 -include_lib("apptools/include/shorthand.hrl").
 -include_lib("elgamal/include/elgamal.hrl").
+
+%% Exported: generate_key_pair
+
+generate_key_pair() ->
+    {Pk, Sk} = elgamal:generate_key_pair(),
+    {base64:encode(public_key_to_binary(Pk)),
+     base64:encode(secret_key_to_binary(Sk))}.
 
 %% Exported: encrypt
 
