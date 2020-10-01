@@ -4,13 +4,14 @@
 -include("../include/elgamal.hrl").
 
 start() ->
-    {Pk, Sk} = elgamal:generate_key_pair(),
-    
+    {BPk, BSk} = elgamal:generate_key_pair(<<"Bob">>),
+    {APk, ASk} = elgamal:generate_key_pair(<<"Alice">>),
+
     %% ==== Test multiplicative ElGamal encryption ====
 
     Plaintext = crypto:strong_rand_bytes(?MAX_MESSAGE_SIZE),
-    Ciphertext = elgamal:encrypt(Plaintext, Pk),
-    Plaintext = elgamal:decrypt(Ciphertext, Sk),
+    Ciphertext = elgamal:encrypt(Plaintext, APk),
+    Plaintext = elgamal:decrypt(Ciphertext, ASk),
 
     %% ==== Test additive ElGamal encryption ====
     
@@ -21,20 +22,41 @@ start() ->
     %% i.e. the SHA1 key needed by crypto:mac^4 when computing
     %% the HMAC (see Spiridon) is 20 bytes. This is a show stopper! 
     ShortPlaintext = crypto:strong_rand_bytes(2),
-    ShortCiphertext = elgamal:modified_encrypt(ShortPlaintext, Pk),
+    ShortCiphertext = elgamal:modified_encrypt(ShortPlaintext, APk),
     %% Takes ~5 seconds on my machine
-    ShortPlaintext = elgamal:modified_decrypt(ShortCiphertext, Sk),
+    ShortPlaintext = elgamal:modified_decrypt(ShortCiphertext, ASk),
 
     %% ==== Test encryption as introduced by Spiridon ====
 
     ManyPlaintexts = [crypto:strong_rand_bytes(?MAX_MESSAGE_SIZE),
                       crypto:strong_rand_bytes(?MAX_MESSAGE_SIZE)],
-    ManyCiphertexts = elgamal:uencrypt(ManyPlaintexts, Pk),
-    ManyPlaintexts = elgamal:udecrypt(ManyCiphertexts, Sk),
+    ManyCiphertexts = elgamal:uencrypt(ManyPlaintexts, APk),
+    ManyPlaintexts = elgamal:udecrypt(ManyCiphertexts, ASk),
     %% NOTE: Here we perform 10 re-encryptions and the problem now is
     %% that the randomized ciphertext steadily grows in size for each
     %% randomization. Why? This is a showstopper! 
-    many_urandomize(ManyPlaintexts, ManyCiphertexts, Sk, 10).
+    many_urandomize(ManyPlaintexts, ManyCiphertexts, ASk, 10),
+
+    %% ==== Test encryption vith signature and verify
+
+    %% Bob send message to Alice (APk) and sign it with BSk
+
+    Message = <<"This crypto system is secure as hell.">>,
+    BlobFromBob = elgamal:uencrypt(Message, APk, BSk),
+
+    %% Alice receives a message using her secret key ASk
+    {_BobsNym,Signature,Message} = elgamal:udecrypt(BlobFromBob, ASk),
+
+    %% Alice looks up Bobs public key using Nym to search the public key store
+    %% and verify that the message is indeed sent from Bob
+
+    true = elgamal:verify(Signature, Message, BPk),
+
+    ok.
+
+    
+
+
 
 many_urandomize(Plaintexts, Ciphertexts, Sk, N) ->
   case N of
