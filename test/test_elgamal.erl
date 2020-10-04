@@ -1,4 +1,4 @@
--module(unit_test_elgamal).
+-module(test_elgamal).
 -export([start/0]).
 
 -include("../include/elgamal.hrl").

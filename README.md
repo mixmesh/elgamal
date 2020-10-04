@@ -15,12 +15,15 @@ A library which performs ElGamal encryption.
   <dd>Unit test for the belgamal module</dd>
 </dl>
 
-## Unit testing
+## Testing
 
-Unit tests can be run separately or all at once:
+`make runtest` runs all tests, i.e.
+
+`$ ../obscrete/bin/run_test --config ../obscrete/etc/obscrete-do-nothing.conf test/`
+
+Tests can be run individually as well:
 
 ```
-$ ../obscrete/bin/unit_test --config ../obscrete/etc/obscrete-do-nothing.conf elgamal
-$ ../obscrete/bin/unit_test --config ../obscrete/etc/obscrete-do-nothing.conf belgamal
-$ ../obscrete/bin/unit_test --config ../obscrete/etc/obscrete-do-nothing.conf test/
+$ ../obscrete/bin/run_test --config ../obscrete/etc/obscrete-do-nothing.conf elgamal
+$ ../obscrete/bin/run_test --config ../obscrete/etc/obscrete-do-nothing.conf belgamal
 ```

@@ -1,4 +1,4 @@
--module(unit_test_belgamal).
+-module(test_belgamal).
 -export([start/0]).
 
 start() ->
