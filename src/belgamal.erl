@@ -18,7 +18,7 @@ generate_key_pair() ->
 
 %% Exported: encrypt
 
-%% NOTE: plaintext can be at most ?MAX_MESSAGE_SIZE bytes
+%% NOTE: plaintext can be at most ?SEGMENT_SIZE bytes
 encrypt(Plaintext, Pk) ->
     encode_ciphertext(elgamal:encrypt(Plaintext, Pk)).
 
@@ -36,7 +36,7 @@ uencrypt(Plaintext, Pk) ->
     encode_ciphertexts([UnitCiphertext|Ciphertexts]).
 
 split_plaintext(Plaintext) ->
-    N = ?MAX_MESSAGE_SIZE - 1,
+    N = ?SEGMENT_SIZE - 1,
     case Plaintext of
         <<Part:N/binary, Rest/binary>> ->
             [<<1:8, Part/binary>>|split_plaintext(Rest)];

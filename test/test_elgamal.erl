@@ -9,7 +9,7 @@ start() ->
 
     %% ==== Test multiplicative ElGamal encryption ====
 
-    Plaintext = crypto:strong_rand_bytes(?MAX_MESSAGE_SIZE),
+    Plaintext = crypto:strong_rand_bytes(?SEGMENT_SIZE),
     Ciphertext = elgamal:encrypt(Plaintext, APk),
     Plaintext = elgamal:decrypt(Ciphertext, ASk),
 
@@ -28,8 +28,8 @@ start() ->
 
     %% ==== Test encryption as introduced by Spiridon ====
 
-    ManyPlaintexts = [crypto:strong_rand_bytes(?MAX_MESSAGE_SIZE),
-                      crypto:strong_rand_bytes(?MAX_MESSAGE_SIZE)],
+    ManyPlaintexts = [crypto:strong_rand_bytes(?SEGMENT_SIZE),
+                      crypto:strong_rand_bytes(?SEGMENT_SIZE)],
     ManyCiphertexts = elgamal:uencrypt(ManyPlaintexts, APk),
     ManyPlaintexts = elgamal:udecrypt(ManyCiphertexts, ASk),
     %% NOTE: Here we perform 10 re-encryptions and the problem now is
