@@ -14,7 +14,7 @@ VERSION=$(shell git describe --always --tags)
 APP_SRC=$(APP).app.src
 APP_TARGET=../ebin/$(APP).app
 
-all: $(ALL_OBJECTS)
+all: $(APP_TARGET) $(ALL_OBJECTS)
 
 $(DEPSDIR):
 	mkdir -p $(DEPSDIR)
