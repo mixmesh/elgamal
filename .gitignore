@@ -1,1 +1,4 @@
 *.beam
+*.erl.d
+*.app
+.gitkeep

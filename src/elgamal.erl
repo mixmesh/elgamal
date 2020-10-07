@@ -7,7 +7,7 @@
 -export([uencrypt/3]).
 -export([uencode/1, udecode/1]).
 -export([udecrypt_/2]). %% debug
-%% basic universal 
+%% basic universal
 -export([uencrypt0/2, udecrypt0/2, ureencrypt0/1]).
 -export([sign/2, verify/3]).
 
@@ -35,7 +35,7 @@ generate_encryption_factors(Len) ->
 %%
 %% For each prime factor x of p−1, verify that g^((p−1)/x) != 1 (mod p)
 %% for safe prime then x = 2 and q
-%% 
+%%
 new_generator(Q, P) ->
     G = uniform(1, P),
     case pow(G, Q, P) =/= 1 andalso pow(G, 2, P) =/= 1 of
@@ -298,8 +298,10 @@ udecode(Data) ->
     
 
 -define(HMACHASH, sha256).
-
+%%
 %% sign a message example signature = (G^m)^x 
+%%  m = H(h | message)|message
+%%
 -spec sign(Message::binary(), #sk{}) -> 
 	  non_neg_integer().
 	  
@@ -309,8 +311,9 @@ sign(Message, #sk{x=X,h=H}) ->
     pow(pow(?G,M,?P),X,?P).
 
 %% Given signature message and the public key check that message match
-%%  H'^m * signature = (G^-x)^m * signature = G^-xm * G^xm = 1 
-%% if message match
+%%  m = H(h | message)|message
+%%  h'^m * signature = (g^-x)^m * signature = g^-xm * g^xm = 1
+%%
 
 -spec verify(Signature::non_neg_integer(),Message::binary(), #pk{}) -> 
 	  boolean().

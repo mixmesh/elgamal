@@ -1,0 +1,7 @@
+%% -*- erlang -*-
+{application, elgamal,
+ [{description,"ElGamal encryption"},
+  {vsn, "%VSN%"},
+  {modules, [%MODULES%]},
+  {applications, [kernel, stdlib]}
+]}.
