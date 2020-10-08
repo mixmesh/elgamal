@@ -1,6 +1,6 @@
 -module(elgamal).
 -export([generate_encryption_factors/1]).
--export([generate_key_pair/0, generate_key_pair/1]).
+-export([generate_key_pair/0, generate_key_pair/1, generate_key_pair/2]).
 -export([encrypt/2, decrypt/2]).
 -export([modified_encrypt/2, modified_decrypt/2]).
 -export([uencrypt/2, udecrypt/2, urandomize/1]).
@@ -51,9 +51,13 @@ new_generator(Q, P) ->
 generate_key_pair() ->
     generate_key_pair(<<"default">>).
 
-generate_key_pair(Nym) when is_binary(Nym),
-			    byte_size(Nym) =< 15 ->
+generate_key_pair(Nym) ->
     X = uniform(1, ?Q),
+    generate_key_pair(Nym, X).
+
+generate_key_pair(Nym, X) when is_binary(Nym),
+                               byte_size(Nym) =< 15,
+                               X < ?Q ->
     H = pow(?G, X, ?P),
     {#pk{nym=Nym, h=H}, #sk{nym=Nym, x=X, h=H}}.
 
@@ -94,13 +98,13 @@ modified_decrypt(Ciphertext, Sk) ->
     Gm = decrypt(Ciphertext, Sk),
     %% NOTE: I have been experimenting with Pollard’s rho-method to
     %% solve the discrete logarithm but for some reason it is even
-    %% *slower* than brute forcing. I must be doing something wrong. :-( 
+    %% *slower* than brute forcing. I must be doing something wrong. :-(
     %% More info on Pollard's rho-method can be found in
     %% https://www.luke.maurits.id.au/files/misc/honours_thesis.pdf and
     %% https://www.alpertron.com.ar/DILOG.HTM comes helpful during
     %% debugging.
     %% Calling mpz:dlog/3 eventually ends up in dloglib.c but I have a
-    %% standlone version, i.e. dlog.c, used for testing from a shell.                                                                     
+    %% standlone version, i.e. dlog.c, used for testing from a shell.
 %%  M = mpz:dlog(binary:decode_unsigned(Gm), ?G, ?P),
     M = brute_force_dlog(binary:decode_unsigned(Gm), 0),
     binary:encode_unsigned(M).
@@ -117,7 +121,7 @@ brute_force_dlog(Plaintext, N) ->
 
 %% Spiridon introduces randomization of ciphertexts using universal
 %% re-encryption with a twist, i.e. using both multiplicative and
-%% additive Elgamal encryption. Universal re-encryption was introduced 
+%% additive Elgamal encryption. Universal re-encryption was introduced
 %% by Golle et al. in "Universal Re-encryption for Mixnets"
 %% (https://crypto.stanford.edu/~pgolle/papers/univrenc.pdf).
 %%
@@ -125,18 +129,18 @@ brute_force_dlog(Plaintext, N) ->
 %% in Spiridon's paper, i.e. using padding, keyed HMACs, multiplicative
 %% and additive ElGamal encryption etc. All this is *not* yet in place
 %% but it will be as soon as the discrete logarithms can be solved fast
-%% enough. 
+%% enough.
 %%
 %% NOTE: The u* functions operates on list of plaintexts each of
 %% MAX_SEGMENT_SIZE. This has a number of obvious benefits.
 
 %% Exported: uencrypt
 
--spec uencrypt(Plaintext::binary(), 
+-spec uencrypt(Plaintext::binary(),
 	       ReceiverPk::#pk{}, SenderSk::#sk{}) ->
 	  binary().
-	  
-uencrypt(Plaintext, ReceiverPk, SenderSk=#sk{nym=Nym}) when 
+
+uencrypt(Plaintext, ReceiverPk, SenderSk=#sk{nym=Nym}) when
       is_binary(Plaintext),
       byte_size(Plaintext) =< ?MAX_MESSAGE_SIZE ->
     TextLen = byte_size(Plaintext),
@@ -164,25 +168,25 @@ uencrypt(Parts, Pk) ->
     {encrypt(<<1>>, Pk), [encrypt(Pi, Pk) || Pi <- Parts]}.
 
 %% Exported: udecrypt
-%% if udecrypt is successful then call verify 
+%% if udecrypt is successful then call verify
 %% with signature and public key of Nym.
 
 -spec udecrypt(Chipher::binary(), ReceiverSk::#pk{}) ->
-	  mismatch | 
+	  mismatch |
 	  error |
 	  {Nym::binary(),Signature::non_neg_integer(),Message::binary()}.
 
 udecrypt(Data, Sk) when is_binary(Data) ->
     Chipher = {_C1,_Cs} = udecode(Data),
     case udecrypt_(Chipher, Sk) of
-	mismatch -> 
+	mismatch ->
 	    mismatch;
 	Parts0 ->
 	    %% prepend zeros if size is to small
 	    Parts = [zprep(Pi,?SEGMENT_SIZE) || Pi <- Parts0],
-	    ?dbg("udecrypt: nparts=~w, sizes=~w\n", 
+	    ?dbg("udecrypt: nparts=~w, sizes=~w\n",
 		 [length(Parts), [byte_size(Pi) || Pi <- Parts]]),
-	    Bin = iolist_to_binary(Parts), 
+	    Bin = iolist_to_binary(Parts),
 	    ?dbg("decrypt: text size = ~w\n", [byte_size(Bin)]),
 	    case Bin of
 		<<LenText:32,
@@ -217,7 +221,7 @@ urandomize(Data) when is_binary(Data) ->
     Cipher ={_C1,_Cs} = udecode(Data),
     uencode(urandomize_(Cipher));
 urandomize(Cipher={_C1,_Cs}) ->
-    urandomize_(Cipher).  
+    urandomize_(Cipher).
 
 urandomize_({{UnitC1, UnitC2}, Ciphertexts}) ->
     K0 = uniform(1, ?P),
@@ -276,7 +280,7 @@ ureencrypt0({{A0,B0},{A1,B1}}) ->
 
 uencode({C1, Cs}) ->
     iolist_to_binary([uencode_pair(C1) | [uencode_pair(Ci) || Ci <- Cs]]).
-    
+
 uencode_pair({C1,C2}) ->
     B1 = binary:encode_unsigned(C1),
     B2 = binary:encode_unsigned(C2),
@@ -295,16 +299,16 @@ udecode(Data) ->
 	  binary:decode_unsigned(B2)} ||
 	    <<L1:32, B1:L1/binary,L2:32, B2:L2/binary>> <= Data],
     {C1, Cs}.
-    
+
 
 -define(HMACHASH, sha256).
 %%
-%% sign a message example signature = (G^m)^x 
+%% sign a message example signature = (G^m)^x
 %%  m = H(h | message)|message
 %%
--spec sign(Message::binary(), #sk{}) -> 
+-spec sign(Message::binary(), #sk{}) ->
 	  non_neg_integer().
-	  
+
 sign(Message, #sk{x=X,h=H}) ->
     Mac = crypto:mac(hmac, ?HMACHASH, binary:encode_unsigned(H), Message),
     M = binary:decode_unsigned(iolist_to_binary([Mac,Message])),
@@ -315,7 +319,7 @@ sign(Message, #sk{x=X,h=H}) ->
 %%  h'^m * signature = (g^-x)^m * signature = g^-xm * g^xm = 1
 %%
 
--spec verify(Signature::non_neg_integer(),Message::binary(), #pk{}) -> 
+-spec verify(Signature::non_neg_integer(),Message::binary(), #pk{}) ->
 	  boolean().
 
 verify(Signature, Message, #pk{h=H}) ->
