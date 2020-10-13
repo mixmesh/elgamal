@@ -10,6 +10,7 @@
 %% basic universal
 -export([uencrypt0/2, udecrypt0/2, ureencrypt0/1]).
 -export([sign/2, verify/3]).
+-export([info/1]).
 
 -include("../include/elgamal.hrl").
 
@@ -25,6 +26,17 @@
 %% terms in https://en.wikipedia.org/wiki/ElGamal_encryption.
 
 %% Exported: generate_encryption_factors
+
+info(segment_size) -> ?SEGMENT_SIZE;
+info(num_segments) -> ?NUM_SEGMENTS;
+info(encoded_size) -> ?ENCODED_SIZE;
+info(max_message_size) -> ?MAX_MESSAGE_SIZE;
+info(max_nym_size) -> ?MAX_NYM_SIZE;
+info(p_bit_size) -> 
+    Bin = binary:encode_unsigned(?P),
+    MSB = binary:at(Bin,0),
+    trunc(math:log2(MSB))+1+8*(byte_size(Bin)-1).
+
 
 generate_encryption_factors(Len) ->
     P = mpz:generate_safe_prime(Len),
@@ -145,16 +157,14 @@ uencrypt(Plaintext, ReceiverPk, SenderSk=#sk{nym=Nym}) when
       byte_size(Plaintext) =< ?MAX_MESSAGE_SIZE ->
     TextLen = byte_size(Plaintext),
     NymLen  = byte_size(Nym),
-    NymPad  = random_bytes(15-NymLen),
+    NymPad  = random_bytes(?MAX_NYM_SIZE-NymLen),
     NymBin  = <<Nym/binary,NymPad/binary>>,
     Sign = sign(Plaintext, SenderSk),
-    SignBin = binary:encode_unsigned(Sign),
-    SignLen = byte_size(SignBin),
-    PadLen = ?PAYLOAD_SIZE - (4+16+4+SignLen+TextLen),
+    SignBin = zencode(Sign,?ENCODED_SEGMENT_SIZE),
+    PadLen = ?MAX_MESSAGE_SIZE - TextLen,
     Pad = random_bytes(PadLen),
     Bin = <<TextLen:32,                  %% 4
-	    NymLen:8, NymBin/binary,     %% 16
-	    SignLen:32,                  %% 4
+	    NymLen:8, NymBin/binary,     %% ?BIN_NYM_SIZE (32)
 	    SignBin/binary,
 	    Plaintext/binary,
 	    Pad/binary>>,
@@ -190,8 +200,8 @@ udecrypt(Data, Sk) when is_binary(Data) ->
 	    ?dbg("decrypt: text size = ~w\n", [byte_size(Bin)]),
 	    case Bin of
 		<<LenText:32,
-		  NymLen:8, Nym:NymLen/binary, _:(15-NymLen)/binary,
-		  SignLen:32, SignBin:SignLen/binary,
+		  NymLen:8, Nym:NymLen/binary, _:(?MAX_NYM_SIZE-NymLen)/binary,
+		  SignBin:?ENCODED_SEGMENT_SIZE/binary,
 		  PlainText:LenText/binary,
 		  _/binary>> ->
 		    {Nym,binary:decode_unsigned(SignBin),PlainText};
@@ -282,11 +292,14 @@ uencode({C1, Cs}) ->
     iolist_to_binary([uencode_pair(C1) | [uencode_pair(Ci) || Ci <- Cs]]).
 
 uencode_pair({C1,C2}) ->
-    B1 = binary:encode_unsigned(C1),
-    B2 = binary:encode_unsigned(C2),
-    <<(byte_size(B1)):32, B1/binary,
-      (byte_size(B2)):32, B2/binary>>.
+    <<(zencode(C1, ?ENCODED_SEGMENT_SIZE))/binary,
+      (zencode(C2, ?ENCODED_SEGMENT_SIZE))/binary>>.
 
+zencode(Int, Len) when is_integer(Int), Int > 0 ->
+    Bin = binary:encode_unsigned(Int),
+    Pad = Len - byte_size(Bin),
+    <<0:Pad/unit:8, Bin/binary>>.
+    
 %%
 %% Decode a binary into cipher pair sequence
 %%
@@ -297,25 +310,25 @@ udecode(Data) ->
     [C1|Cs] =
 	[{binary:decode_unsigned(B1),
 	  binary:decode_unsigned(B2)} ||
-	    <<L1:32, B1:L1/binary,L2:32, B2:L2/binary>> <= Data],
+	    <<B1:?ENCODED_SEGMENT_SIZE/binary,
+	      B2:?ENCODED_SEGMENT_SIZE/binary>> <= Data],
     {C1, Cs}.
-
 
 -define(HMACHASH, sha256).
 %%
 %% sign a message example signature = (G^m)^x
-%%  m = H(h | message)|message
+%%  m = H(h | message)
 %%
 -spec sign(Message::binary(), #sk{}) ->
 	  non_neg_integer().
 
 sign(Message, #sk{x=X,h=H}) ->
     Mac = crypto:mac(hmac, ?HMACHASH, binary:encode_unsigned(H), Message),
-    M = binary:decode_unsigned(iolist_to_binary([Mac,Message])),
+    M = binary:decode_unsigned(Mac),
     pow(pow(?G,M,?P),X,?P).
 
 %% Given signature message and the public key check that message match
-%%  m = H(h | message)|message
+%%  m = H(h | message)
 %%  h'^m * signature = (g^-x)^m * signature = g^-xm * g^xm = 1
 %%
 
@@ -324,7 +337,7 @@ sign(Message, #sk{x=X,h=H}) ->
 
 verify(Signature, Message, #pk{h=H}) ->
     Mac = crypto:mac(hmac, ?HMACHASH, binary:encode_unsigned(H), Message),
-    M = binary:decode_unsigned(iolist_to_binary([Mac,Message])),
+    M = binary:decode_unsigned(Mac),
     Verifier = pow(inv(H,?P),M,?P),
     case (Verifier*Signature) rem ?P of
 	1 -> true;
