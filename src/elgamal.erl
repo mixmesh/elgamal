@@ -11,6 +11,8 @@
 -export([uencrypt0/2, udecrypt0/2, ureencrypt0/1]).
 -export([sign/2, verify/3]).
 -export([info/1]).
+-export([binary_to_public_key/1, binary_to_secret_key/1]).
+-export([public_key_to_binary/1, secret_key_to_binary/1]).
 
 -include("../include/elgamal.hrl").
 
@@ -32,7 +34,7 @@ info(num_segments) -> ?NUM_SEGMENTS;
 info(encoded_size) -> ?ENCODED_SIZE;
 info(max_message_size) -> ?MAX_MESSAGE_SIZE;
 info(max_nym_size) -> ?MAX_NYM_SIZE;
-info(p_bit_size) -> 
+info(p_bit_size) ->
     Bin = binary:encode_unsigned(?P),
     MSB = binary:at(Bin,0),
     trunc(math:log2(MSB))+1+8*(byte_size(Bin)-1).
@@ -181,7 +183,7 @@ uencrypt(Parts, Pk) ->
 %% if udecrypt is successful then call verify
 %% with signature and public key of Nym.
 
--spec udecrypt(Chipher::binary(), ReceiverSk::#pk{}) ->
+-spec udecrypt(Chipher::binary(), ReceiverSk::#sk{}) ->
 	  mismatch |
 	  error |
 	  {Nym::binary(),Signature::non_neg_integer(),Message::binary()}.
@@ -299,7 +301,7 @@ zencode(Int, Len) when is_integer(Int), Int > 0 ->
     Bin = binary:encode_unsigned(Int),
     Pad = Len - byte_size(Bin),
     <<0:Pad/unit:8, Bin/binary>>.
-    
+
 %%
 %% Decode a binary into cipher pair sequence
 %%
@@ -358,3 +360,37 @@ pow(A, B, P) ->
 
 inv(A, P) ->
     mpz:invert(A, P).
+
+%% Exported: binary_to_public_key
+
+binary_to_public_key(<<NymSize:8/unsigned-integer, Nym:NymSize/binary,
+                       HBin/binary>>) ->
+    #pk{nym = Nym, h = binary:decode_unsigned(HBin)}.
+
+%% Exported: binary_to_secret_key
+
+binary_to_secret_key(<<NymSize:8/unsigned-integer, Nym:NymSize/binary,
+                       XBinSize:8/unsigned-integer, XBin:XBinSize/binary,
+                       HBin/binary>>) ->
+    #sk{nym = Nym,
+        x = binary:decode_unsigned(XBin),
+        h = binary:decode_unsigned(HBin)}.
+
+%% Exported: binary_to_public_key
+
+public_key_to_binary(#pk{nym = Nym, h = H}) ->
+    NymSize = size(Nym),
+    HBin = binary:encode_unsigned(H),
+    <<NymSize:8/unsigned-integer, Nym/binary,
+      HBin/binary>>.
+
+%% Exported: secret_key_to_binary
+
+secret_key_to_binary(#sk{nym = Nym, x = X, h = H}) ->
+    NymSize = size(Nym),
+    XBin = binary:encode_unsigned(X),
+    XBinSize = size(XBin),
+    HBin = binary:encode_unsigned(H),
+    <<NymSize:8/unsigned-integer, Nym/binary,
+      XBinSize:8/unsigned-integer, XBin/binary,
+      HBin/binary>>.

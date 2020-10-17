@@ -1,4 +1,3 @@
 [
- test_elgamal,
- test_belgamal
+ test_elgamal
 ].
