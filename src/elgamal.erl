@@ -2,13 +2,11 @@
 -export([generate_encryption_factors/1]).
 -export([generate_key_pair/0, generate_key_pair/1, generate_key_pair/2]).
 -export([encrypt/2, decrypt/2]).
--export([modified_encrypt/2, modified_decrypt/2]).
 -export([uencrypt/2, udecrypt/2, urandomize/1]).
 -export([uencrypt/3]).
 -export([uencode/1, udecode/1]).
 -export([udecrypt_/2]). %% debug
 %% basic universal
--export([uencrypt0/2, udecrypt0/2, ureencrypt0/1]).
 -export([sign/2, verify/3]).
 -export([info/1]).
 -export([binary_to_public_key/1, binary_to_secret_key/1]).
@@ -96,42 +94,6 @@ decrypt({C1, C2}, #sk{x = X}) ->
     S = pow(C1, ?P-1-X, ?P),  %% = C1^-x
     M = (C2 * S) rem ?P,
     binary:encode_unsigned(M).
-
-%% Exported: modified_encrypt (additive ElGamal encryption)
-
-modified_encrypt(Plaintext, #pk{h = H}) ->
-    M = binary:decode_unsigned(Plaintext),
-    R = uniform(1, ?Q),
-    C1 = pow(?G, R, ?P),
-    C2 = (pow(?G, M, ?P) * pow(H, R, ?P)) rem ?P,
-    {C1, C2}.
-
-%% Exported: modified_decrypt (additive ElGamal decryption)
-
-modified_decrypt(Ciphertext, Sk) ->
-    Gm = decrypt(Ciphertext, Sk),
-    %% NOTE: I have been experimenting with Pollard’s rho-method to
-    %% solve the discrete logarithm but for some reason it is even
-    %% *slower* than brute forcing. I must be doing something wrong. :-(
-    %% More info on Pollard's rho-method can be found in
-    %% https://www.luke.maurits.id.au/files/misc/honours_thesis.pdf and
-    %% https://www.alpertron.com.ar/DILOG.HTM comes helpful during
-    %% debugging.
-    %% Calling mpz:dlog/3 eventually ends up in dloglib.c but I have a
-    %% standlone version, i.e. dlog.c, used for testing from a shell.
-%%  M = mpz:dlog(binary:decode_unsigned(Gm), ?G, ?P),
-    M = brute_force_dlog(binary:decode_unsigned(Gm), 0),
-    binary:encode_unsigned(M).
-
-%% NOTE: Brute force only realistically handles plaintexts less than
-%% or equal to 24 bits (or else it takes for ever)
-brute_force_dlog(Plaintext, N) ->
-  case pow(?G, N, ?P) of
-      Plaintext ->
-          N;
-      _ ->
-          brute_force_dlog(Plaintext, N + 1)
-  end.
 
 %% Spiridon introduces randomization of ciphertexts using universal
 %% re-encryption with a twist, i.e. using both multiplicative and
@@ -245,44 +207,6 @@ urandomize_({{UnitC1, UnitC2}, Ciphertexts}) ->
                   end, Ciphertexts),
     {{pow(UnitC1, K0, ?P), pow(UnitC2, K0, ?P)},
      RandomizedCiphertexts}.
-
-
-%% (basic) universal encrypt
-uencrypt0(PlainText, Pk) ->
-    Bin = erlang:iolist_to_binary(PlainText),
-    M = binary:decode_unsigned(Bin),
-    true = M >= 1 andalso M < ?Q-1,
-    uencrypt0_(M, Pk).
-
-uencrypt0_(M, #pk{h=H}) ->
-    K0 = uniform(1, ?Q-2),
-    K1 = uniform(1, ?Q-2),
-    A0 = (M*pow(H,K0,?P)) rem ?P,
-    B0 = pow(?G,K0,?P),
-    A1 = pow(H,K1,?P),
-    B1 = pow(?G,K1,?P),
-    {{A0,B0},{A1,B1}}.
-
-udecrypt0(Cipher, Sk) ->
-    case udecrypt0_(Cipher, Sk) of
-	false -> false;
-	M -> binary:encode_unsigned(M)
-    end.
-
-udecrypt0_({{A0,B0},{A1,B1}}, #sk{x=X}) ->
-    case A1*pow(B1,?P-1-X,?P) rem ?P of
-	1 -> A0*pow(B0,?P-1-X,?P) rem ?P;
-	_ -> false
-    end.
-
-ureencrypt0({{A0,B0},{A1,B1}}) ->
-    K0 = uniform(1, ?Q-2),
-    K1 = uniform(1, ?Q-2),
-    A0_1 = (A0*pow(A1,K0,?P)) rem ?P,
-    B0_1 = (B0*pow(B1,K0,?P)) rem ?P,
-    A1_1 = pow(A1,K1,?P),
-    B1_1 = pow(B1,K1,?P),
-    {{A0_1,B0_1},{A1_1,B1_1}}.
 
 %%
 %% Encode cipher pair sequence into a binary
