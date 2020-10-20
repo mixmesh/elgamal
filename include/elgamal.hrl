@@ -1,15 +1,17 @@
 -ifndef(ELGAMAL_HRL).
 -define(ELGAMAL_HRL, true).
 
+-define(MAX_NYM_SIZE, 31).
+
 %% Public key
 -record(pk, {
-	     nym :: binary(),         %% len <= 15
+	     nym :: binary(),         %% len <= ?MAX_NUM_SIZE
              h :: non_neg_integer()   %% g^x (mod P)
             }).
 
 %% Secret key (also keep public key here, to avoid calculation)
 -record(sk, {
-	     nym :: binary(),         %% len <= 15
+	     nym :: binary(),         %% len <= ?MAX_NUM_SIZE
              x :: non_neg_integer(),  %% 1..Q
              h :: non_neg_integer()   %% g^x (mod P)
             }).
@@ -43,7 +45,6 @@
 %% first segment is <<1>>
 -define(PAYLOAD_SIZE, (9*?SEGMENT_SIZE)).
 -define(ENCODED_SIZE, (10*2*?ENCODED_SEGMENT_SIZE)).
--define(MAX_NYM_SIZE, 31).
 -define(BIN_NYM_SIZE, 32).  %% include length (random pad)
 -define(MAX_MESSAGE_SIZE, (?PAYLOAD_SIZE-(4+?BIN_NYM_SIZE+?ENCODED_SEGMENT_SIZE))).
 
