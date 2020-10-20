@@ -14,17 +14,17 @@ start() ->
     Plaintext = elgamal:decrypt(Ciphertext, ASk),
 
     %% ==== Test additive ElGamal encryption ====
-    
-    %% NOTE: The plaintext can currently not be longer than 2 bytes when
-    %% performing additive ElGamal encryption, i.e. solving the discrete
-    %% logarithm using brute force takes too long time for larger
-    %% plaintexts. It must be possible to support 160 bits plaintexts,
-    %% i.e. the SHA1 key needed by crypto:mac^4 when computing
-    %% the HMAC (see Spiridon) is 20 bytes. This is a show stopper! 
-    ShortPlaintext = crypto:strong_rand_bytes(2),
-    ShortCiphertext = elgamal:modified_encrypt(ShortPlaintext, APk),
-    %% Takes ~5 seconds on my machine
-    ShortPlaintext = elgamal:modified_decrypt(ShortCiphertext, ASk),
+
+    %% %% NOTE: The plaintext can currently not be longer than 2 bytes when
+    %% %% performing additive ElGamal encryption, i.e. solving the discrete
+    %% %% logarithm using brute force takes too long time for larger
+    %% %% plaintexts. It must be possible to support 160 bits plaintexts,
+    %% %% i.e. the SHA1 key needed by crypto:mac^4 when computing
+    %% %% the HMAC (see Spiridon) is 20 bytes. This is a show stopper!
+    %% ShortPlaintext = crypto:strong_rand_bytes(2),
+    %% ShortCiphertext = elgamal:modified_encrypt(ShortPlaintext, APk),
+    %% %% Takes ~5 seconds on my machine
+    %% ShortPlaintext = elgamal:modified_decrypt(ShortCiphertext, ASk),
 
     %% ==== Test encryption as introduced by Spiridon ====
 
@@ -34,7 +34,7 @@ start() ->
     ManyPlaintexts = elgamal:udecrypt(ManyCiphertexts, ASk),
     %% NOTE: Here we perform 10 re-encryptions and the problem now is
     %% that the randomized ciphertext steadily grows in size for each
-    %% randomization. Why? This is a showstopper! 
+    %% randomization. Why? This is a showstopper!
     many_urandomize(ManyPlaintexts, ManyCiphertexts, ASk, 10),
 
     %% ==== Test encryption vith signature and verify
@@ -54,7 +54,7 @@ start() ->
 
     ok.
 
-    
+
 
 
 
