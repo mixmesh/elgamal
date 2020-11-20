@@ -68,7 +68,7 @@ generate_key_pair(Nym) ->
     generate_key_pair(Nym, X).
 
 generate_key_pair(Nym, X) when is_binary(Nym),
-                               byte_size(Nym) =< 15,
+                               byte_size(Nym) =< ?MAX_NYM_SIZE,
                                X < ?Q ->
     H = pow(?G, X, ?P),
     {#pk{nym=Nym, h=H}, #sk{nym=Nym, x=X, h=H}}.
