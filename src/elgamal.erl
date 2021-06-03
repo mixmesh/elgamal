@@ -9,8 +9,8 @@
 %% basic universal
 -export([sign/2, verify/3]).
 -export([info/1]).
--export([binary_to_public_key/1, binary_to_secret_key/1]).
--export([public_key_to_binary/1, secret_key_to_binary/1]).
+-export([binary_to_pk/1, binary_to_sk/1]).
+-export([pk_to_binary/1, sk_to_binary/1]).
 
 -include("../include/elgamal.hrl").
 
@@ -302,39 +302,38 @@ inv(A, P) ->
     mpz:invert(A, P).
 
 %%
-%% Exported: binary_to_public_key
+%% Exported: binary_to_pk
 %%
 
-binary_to_public_key(<<NymSize:8/unsigned-integer, Nym:NymSize/binary,
-                       HBin/binary>>) ->
+binary_to_pk(<<NymSize:8/unsigned-integer, Nym:NymSize/binary, HBin/binary>>) ->
     #pk{nym = Nym, h = binary:decode_unsigned(HBin)}.
 
 %%
-%% Exported: binary_to_secret_key
+%% Exported: binary_to_sk
 %%
 
-binary_to_secret_key(<<NymSize:8/unsigned-integer, Nym:NymSize/binary,
-                       XBinSize:8/unsigned-integer, XBin:XBinSize/binary,
-                       HBin/binary>>) ->
+binary_to_sk(<<NymSize:8/unsigned-integer, Nym:NymSize/binary,
+               XBinSize:8/unsigned-integer, XBin:XBinSize/binary,
+               HBin/binary>>) ->
     #sk{nym = Nym,
         x = binary:decode_unsigned(XBin),
         h = binary:decode_unsigned(HBin)}.
 
 %%
-%% Exported: binary_to_public_key
+%% Exported: binary_to_pk
 %%
 
-public_key_to_binary(#pk{nym = Nym, h = H}) ->
+pk_to_binary(#pk{nym = Nym, h = H}) ->
     NymSize = size(Nym),
     HBin = binary:encode_unsigned(H),
     <<NymSize:8/unsigned-integer, Nym/binary,
       HBin/binary>>.
 
 %%
-%% Exported: secret_key_to_binary
+%% Exported: sk_to_binary
 %%
 
-secret_key_to_binary(#sk{nym = Nym, x = X, h = H}) ->
+sk_to_binary(#sk{nym = Nym, x = X, h = H}) ->
     NymSize = size(Nym),
     XBin = binary:encode_unsigned(X),
     XBinSize = size(XBin),
