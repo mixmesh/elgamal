@@ -25,7 +25,9 @@
 %% Multiplicative ElGamal encryption is also described in general
 %% terms in https://en.wikipedia.org/wiki/ElGamal_encryption.
 
+%%
 %% Exported: generate_encryption_factors
+%%
 
 info(segment_size) -> ?SEGMENT_SIZE;
 info(num_segments) -> ?NUM_SEGMENTS;
@@ -57,7 +59,10 @@ new_generator(Q, P) ->
             new_generator(Q, P)
     end.
 
+%%
 %% Exported: generate_key_pair
+%%
+
 -spec generate_key_pair() -> {#pk{}, #sk{}}.
 
 generate_key_pair() ->
@@ -73,7 +78,9 @@ generate_key_pair(Nym, X) when is_binary(Nym),
     H = pow(?G, X, ?P),
     {#pk{nym=Nym, h=H}, #sk{nym=Nym, x=X, h=H}}.
 
+%%
 %% Exported: encrypt (multiplicative ElGamal encryption)
+%%
 
 -spec encrypt(Plaintext::binary(), #pk{}) -> ciphpair_t().
 
@@ -86,7 +93,9 @@ encrypt(Plaintext, #pk{h = H}) when is_binary(Plaintext) ->
     C2 = (M * S) rem ?P,
     {C1, C2}.
 
+%%
 %% Exported: decrypt (multiplicative ElGamal decryption)
+%%
 
 -spec decrypt(Pair::ciphpair_t(), #sk{}) -> binary().
 
@@ -110,7 +119,9 @@ decrypt({C1, C2}, #sk{x = X}) ->
 %% NOTE: The u* functions operates on list of plaintexts each of
 %% MAX_SEGMENT_SIZE. This has a number of obvious benefits.
 
+%%
 %% Exported: uencrypt
+%%
 
 -spec uencrypt(Plaintext::binary(),
 	       ReceiverPk::#pk{}, SenderSk::#sk{}) ->
@@ -141,7 +152,10 @@ uencrypt(Plaintext, ReceiverPk, SenderSk=#sk{nym=Nym}) when
 uencrypt(Parts, Pk) ->
     {encrypt(<<1>>, Pk), [encrypt(Pi, Pk) || Pi <- Parts]}.
 
+%%
 %% Exported: udecrypt
+%%
+
 %% if udecrypt is successful then call verify
 %% with signature and public key of Nym.
 
@@ -189,7 +203,9 @@ zprep(Bin, Size) when byte_size(Bin) < Size ->
     <<0:(Size-byte_size(Bin))/unit:8, Bin/binary>>;
 zprep(Bin, _Size) -> Bin.
 
+%%
 %% Exported: urandomize
+%%
 
 urandomize(Data) when is_binary(Data) ->
     Cipher ={_C1,_Cs} = udecode(Data),
@@ -285,13 +301,17 @@ pow(A, B, P) ->
 inv(A, P) ->
     mpz:invert(A, P).
 
+%%
 %% Exported: binary_to_public_key
+%%
 
 binary_to_public_key(<<NymSize:8/unsigned-integer, Nym:NymSize/binary,
                        HBin/binary>>) ->
     #pk{nym = Nym, h = binary:decode_unsigned(HBin)}.
 
+%%
 %% Exported: binary_to_secret_key
+%%
 
 binary_to_secret_key(<<NymSize:8/unsigned-integer, Nym:NymSize/binary,
                        XBinSize:8/unsigned-integer, XBin:XBinSize/binary,
@@ -300,7 +320,9 @@ binary_to_secret_key(<<NymSize:8/unsigned-integer, Nym:NymSize/binary,
         x = binary:decode_unsigned(XBin),
         h = binary:decode_unsigned(HBin)}.
 
+%%
 %% Exported: binary_to_public_key
+%%
 
 public_key_to_binary(#pk{nym = Nym, h = H}) ->
     NymSize = size(Nym),
@@ -308,7 +330,9 @@ public_key_to_binary(#pk{nym = Nym, h = H}) ->
     <<NymSize:8/unsigned-integer, Nym/binary,
       HBin/binary>>.
 
+%%
 %% Exported: secret_key_to_binary
+%%
 
 secret_key_to_binary(#sk{nym = Nym, x = X, h = H}) ->
     NymSize = size(Nym),
